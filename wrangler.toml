@@ -1,0 +1,17 @@
+name = "backend"
+type = "javascript"
+account_id = "c5bc78d0b867fc8bac8435761e50d993"
+workers_dev = true
+route = ""
+zone_id = ""
+
+[build]
+command = "npm run build"
+
+[build.upload]
+format = "service-worker"
+
+
+[miniflare]
+host = "127.0.0.1"                 ## --host
+port = 8787                        ## --port
