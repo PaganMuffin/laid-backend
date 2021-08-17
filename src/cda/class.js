@@ -12,6 +12,7 @@ export class get_video_info {
     id = null;
     duration = null;
     thumb = null;
+    type = null;
     //quality = null;
     //url = null;
 
@@ -21,7 +22,7 @@ export class get_video_info {
         this.id = data['video']['id']
         this.duration = data['video']['duration']
         this.thumb = data['video']['thumb']
-
+        this.type = data['video']['type']
         //this.url = decode(data['video']['file'])
         //this.quality = data['video']['height'] + 'p'
     }
@@ -45,6 +46,7 @@ export class get_video_url {
 
     element(element){
         const data = JSON.parse(element.getAttribute('player_data'))
+        console.log(data)
         this.url = decode(data['video']['file'])
     }
 }
