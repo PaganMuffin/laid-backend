@@ -21,7 +21,7 @@ export class get_video_info {
         const data = JSON.parse(element.getAttribute('player_data'))
         this.title = decodeURI(data['video']['title']).replaceAll(/%2C/gi, ',')
         this.id = data['video']['id']
-        this.duration = data['video']['duration']
+        this.duration = data['video']['durationFull']
         this.thumb = data['video']['thumb']
         this.type = data['video']['type']
         this.quality_data = {q:data['video']['quality'], h: data['video']['height']}

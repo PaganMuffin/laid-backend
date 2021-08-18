@@ -105,7 +105,7 @@
       const data = JSON.parse(element.getAttribute("player_data"));
       this.title = decodeURI(data["video"]["title"]).replaceAll(/%2C/gi, ",");
       this.id = data["video"]["id"];
-      this.duration = data["video"]["duration"];
+      this.duration = data["video"]["durationFull"];
       this.thumb = data["video"]["thumb"];
       this.type = data["video"]["type"];
       this.quality_data = { q: data["video"]["quality"], h: data["video"]["height"] };
@@ -150,7 +150,7 @@
       }
     };
   };
-  var GEN_URL = "https://backend.pamu.ga";
+  var GEN_URL = "http://localhost:8787";
   var check_resolutions = async (cda_id) => {
     const url = `https://ebd.cda.pl/620x395/${cda_id}`;
     const f = await fetch(url, options(url));
@@ -233,6 +233,8 @@
                 body {
                     margin: 0 auto;
                     background-color: black;
+                    width:100%;
+                    height:100%;
                 }
             </style>     
         </head>
@@ -246,6 +248,7 @@
         <script>
             const player = new Plyr('#player');
             player.source = {
+                autoplay: true,
                 type: 'video',
                 title: '${data["data"]["title"]}',
                 sources: ${JSON.stringify(data["data"]["qualities"].map((x) => {
@@ -388,6 +391,59 @@
     return res;
   });
   API.get("/video/:p/:id", async (req, event) => {
+    let cache = caches.default;
+    const url = new URL(req.url);
+    const url_to_check = url.origin + url.pathname;
+    const inCache = await cache.match(url_to_check);
+    if (inCache) {
+      console.log("FROM CACHE");
+      return inCache;
+    }
+    const partner = req.params.p === "1" ? true : false;
+    const cda_id = req.params.id;
+    const cda_url = `https://ebd.cda.pl/620x395/${cda_id}${partner ? "/vfilm" : ""}`;
+    const video_url = await get_url(cda_url, null, cda_id);
+    if (video_url === null) {
+      return new Response("", { status: 500 });
+    }
+    const header = new Headers();
+    header.set("Cache-Control", "public, max-age=18000");
+    header.set("location", video_url);
+    header.set("Access-Control-Allow-Origin", "*");
+    const res = new Response("", { headers: header, status: 301 });
+    console.log("PUT TO CACHE");
+    const new_req = new Request(url_to_check, req);
+    event.waitUntil(cache.put(new_req, res.clone()));
+    return res;
+  });
+  API.head("/video/:p/:id/:res", async (req, event) => {
+    let cache = caches.default;
+    const url = new URL(req.url);
+    const url_to_check = url.origin + url.pathname;
+    const inCache = await cache.match(url_to_check);
+    if (inCache) {
+      console.log("FROM CACHE");
+      return inCache;
+    }
+    const partner = req.params.p === "1" ? true : false;
+    const cda_id = req.params.id;
+    const resolution = req.params.res;
+    const cda_url = `https://ebd.cda.pl/620x395/${cda_id}${partner ? "/vfilm" : ""}`;
+    const video_url = await get_url(cda_url, resolution, cda_id);
+    if (video_url === null) {
+      return new Response("", { status: 500 });
+    }
+    const header = new Headers();
+    header.set("Cache-Control", "public, max-age=18000");
+    header.set("location", video_url);
+    header.set("Access-Control-Allow-Origin", "*");
+    const res = new Response("", { headers: header, status: 301 });
+    console.log("PUT TO CACHE");
+    const new_req = new Request(url_to_check, req);
+    event.waitUntil(cache.put(new_req, res.clone()));
+    return res;
+  });
+  API.head("/video/:p/:id", async (req, event) => {
     let cache = caches.default;
     const url = new URL(req.url);
     const url_to_check = url.origin + url.pathname;

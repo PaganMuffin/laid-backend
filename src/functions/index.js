@@ -13,6 +13,8 @@ export const build_player = (data, url) => {
                 body {
                     margin: 0 auto;
                     background-color: black;
+                    width:100%;
+                    height:100%;
                 }
             </style>     
         </head>
@@ -26,6 +28,7 @@ export const build_player = (data, url) => {
         <script>
             const player = new Plyr('#player');
             player.source = {
+                autoplay: true,
                 type: 'video',
                 title: '${data['data']['title']}',
                 sources: ${JSON.stringify(data['data']['qualities'].map((x) => {return {'src':x['url'],'type':'video/mp4','size':x['resolution'].replace('p','')}}))},

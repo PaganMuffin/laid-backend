@@ -187,6 +187,84 @@ API.get('/video/:p/:id', async (req, event) => {
     return res
 })
 
+API.head('/video/:p/:id/:res', async (req, event) => {
+
+    //CACHE CHECK
+    let cache = caches.default;
+    const url = new URL(req.url)
+    const url_to_check =  url.origin + url.pathname
+    const inCache = await cache.match(url_to_check)
+    if (inCache) {
+        console.log("FROM CACHE")
+        //if(inCache.status === 200) event.waitUntil(update_stats_global('cda-gen-json'))
+        return inCache
+    }
+
+    const partner = req.params.p === '1' ? true : false
+    const cda_id = req.params.id
+    const resolution = req.params.res
+    const cda_url = `https://ebd.cda.pl/620x395/${cda_id}${partner ? '/vfilm' : ''}`
+    const video_url = await get_url(cda_url,resolution,cda_id)
+    if(video_url === null){
+        return new Response('', {status: 500})
+    }
+
+    const header = new Headers()
+
+    header.set('Cache-Control', 'public, max-age=18000');
+    header.set('location',video_url)
+    header.set('Access-Control-Allow-Origin','*')
+
+    const res = new Response('',{headers:header, status:301})
+
+    //PUT IN CACHE IF 200
+    console.log("PUT TO CACHE")
+    const new_req = new Request(url_to_check, req)
+    event.waitUntil(cache.put(new_req, res.clone()))
+    //event.waitUntil(update_stats_global('cda-gen-json'))
+
+    return res
+})
+
+API.head('/video/:p/:id', async (req, event) => {
+    //CACHE CHECK
+    let cache = caches.default;
+    const url = new URL(req.url)
+    const url_to_check =  url.origin + url.pathname
+    const inCache = await cache.match(url_to_check)
+    if (inCache) {
+        console.log("FROM CACHE")
+        //if(inCache.status === 200) event.waitUntil(update_stats_global('cda-gen-json'))
+        return inCache
+    }
+
+    const partner = req.params.p === '1' ? true : false
+    const cda_id = req.params.id
+
+    const cda_url = `https://ebd.cda.pl/620x395/${cda_id}${partner ? '/vfilm' : ''}`
+    const video_url = await get_url(cda_url,null,cda_id)
+    if(video_url === null){
+        return new Response('', {status: 500})
+    }
+
+    const header = new Headers()
+
+    header.set('Cache-Control', 'public, max-age=18000');
+    header.set('location',video_url)
+    header.set('Access-Control-Allow-Origin','*')
+
+    const res = new Response('',{headers:header, status:301})
+
+    //PUT IN CACHE IF 200
+    console.log("PUT TO CACHE")
+    const new_req = new Request(url_to_check, req)
+    event.waitUntil(cache.put(new_req, res.clone()))
+    //event.waitUntil(update_stats_global('cda-gen-json'))
+    
+    return res
+})
+
+
 API.get('/stats', async (req, res) => {
     return new Response(JSON.stringify(await get_stats_global()), {status:200})
 })
