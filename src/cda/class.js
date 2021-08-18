@@ -13,6 +13,7 @@ export class get_video_info {
     duration = null;
     thumb = null;
     type = null;
+    quality_data = null
     //quality = null;
     //url = null;
 
@@ -23,6 +24,7 @@ export class get_video_info {
         this.duration = data['video']['duration']
         this.thumb = data['video']['thumb']
         this.type = data['video']['type']
+        this.quality_data = {q:data['video']['quality'], h: data['video']['height']}
         //this.url = decode(data['video']['file'])
         //this.quality = data['video']['height'] + 'p'
     }

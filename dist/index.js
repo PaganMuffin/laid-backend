@@ -100,6 +100,7 @@
     duration = null;
     thumb = null;
     type = null;
+    quality_data = null;
     element(element) {
       const data = JSON.parse(element.getAttribute("player_data"));
       this.title = decodeURI(data["video"]["title"]).replaceAll(/%2C/gi, ",");
@@ -107,6 +108,7 @@
       this.duration = data["video"]["duration"];
       this.thumb = data["video"]["thumb"];
       this.type = data["video"]["type"];
+      this.quality_data = { q: data["video"]["quality"], h: data["video"]["height"] };
     }
   };
   var get_video_qualities = class {
@@ -192,10 +194,11 @@
     let q = [];
     if (info["title"] && info["duration"] && arr.length === 0) {
       q = [{
-        "quality": "vl",
-        "resolution": "360p",
+        "quality": info["quality_data"]["q"],
+        "resolution": info["quality_data"]["h"] + "p",
         "url": `${GEN_URL}/video/${info["type"] === "partner" ? "1" : "0"}/${cda_id}/`
       }];
+      delete info["quality_data"];
     } else {
       q = await Promise.all(arr.map(async (x) => {
         return {
@@ -310,6 +313,7 @@
     if (data["code"] === 200) {
       header.set("content-type", "text/html; charset=UTF-8");
       header.set("Cache-Control", "public, max-age=60");
+      header.set("Access-Control-Allow-Origin", "*");
       html = build_player(data, req["url"]);
       event.waitUntil(update_stats_global("cda-gen-player"));
     } else {
@@ -347,6 +351,7 @@
       header.set("Cache-Control", "public, max-age=60");
       event.waitUntil(update_stats_global("cda-gen-json"));
     }
+    header.set("Access-Control-Allow-Origin", "*");
     const res = new Response(JSON.stringify(data), { headers: header, status: data["code"] });
     if (data["code"] === 200) {
       console.log("PUT TO CACHE");
@@ -375,6 +380,7 @@
     const header = new Headers();
     header.set("Cache-Control", "public, max-age=18000");
     header.set("location", video_url);
+    header.set("Access-Control-Allow-Origin", "*");
     const res = new Response("", { headers: header, status: 301 });
     console.log("PUT TO CACHE");
     const new_req = new Request(url_to_check, req);
@@ -400,6 +406,7 @@
     const header = new Headers();
     header.set("Cache-Control", "public, max-age=18000");
     header.set("location", video_url);
+    header.set("Access-Control-Allow-Origin", "*");
     const res = new Response("", { headers: header, status: 301 });
     console.log("PUT TO CACHE");
     const new_req = new Request(url_to_check, req);

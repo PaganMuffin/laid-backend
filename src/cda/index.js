@@ -39,6 +39,7 @@ export const check_resolutions = async (cda_id) => {
     info['code'] = f.status
     info['premium'] = is_premium['premium']
     info['url'] = new_url
+
     return {info, arr:arr['arr']}
 }
 
@@ -117,11 +118,12 @@ export const get_data = async (cda_id)  => {
     
     if (info['title'] && info['duration'] && arr.length === 0){
         q = [{
-                'quality':'vl',
-                'resolution': '360p',
+                'quality':info['quality_data']['q'],
+                'resolution': info['quality_data']['h'] + 'p',
                 'url':`${GEN_URL}/video/${info['type'] === 'partner' ? '1' : '0'}/${cda_id}/`
                 //'url':await get_url(info['url'],null, cda_id)
             }]
+        delete info['quality_data']
     } else {
         q = await Promise.all(arr.map(async (x) => {
             return {

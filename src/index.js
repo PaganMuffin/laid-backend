@@ -4,6 +4,19 @@ import { build_player, get_stats_global, update_stats_global } from './functions
 
 const API = Router();
 
+const origins = ['localhost:3000', 'localhost:8787', 'backend.pamu.ga', 'pamu.ga']
+
+const CORS_Test = (req, event) => {
+    try{
+        const org = (new URL(req.headers.get('origin'))).host
+        console.log(org)
+
+    }
+    catch(e){
+        console.log(e['code'])
+    }
+    //return new Response("TEST", {status:400})
+}
 
 API.get(`/player/:id`, async (req, event) => {
     console.log("START")
@@ -27,6 +40,8 @@ API.get(`/player/:id`, async (req, event) => {
     if(data['code'] === 200){
         header.set('content-type','text/html; charset=UTF-8')
         header.set('Cache-Control', 'public, max-age=60');
+        header.set('Access-Control-Allow-Origin','*')
+
         html = build_player(data, req['url'])
         event.waitUntil(update_stats_global('cda-gen-player'))
     } else {
@@ -73,7 +88,6 @@ API.get('/json/:id', async (req, event) => {
     //GET DATA FROM CDA
     const data = await get_data(cda_id)
     data['timestamp'] = new Date().getTime()
-    
     if(data['code'] === 200){
         console.log("UPDATE COUNTER")
         header.set('Cache-Control', 'public, max-age=60')
@@ -83,9 +97,9 @@ API.get('/json/:id', async (req, event) => {
 
     //CREATE RESPONSE
     
-    
+    header.set('Access-Control-Allow-Origin','*')
     const res = new Response(JSON.stringify(data), {headers:header, status:data['code']})
-
+    
     //PUT IN CACHE IF 200
     if(data['code'] === 200){
         console.log("PUT TO CACHE")
@@ -122,7 +136,8 @@ API.get('/video/:p/:id/:res', async (req, event) => {
 
     header.set('Cache-Control', 'public, max-age=18000');
     header.set('location',video_url)
-    
+    header.set('Access-Control-Allow-Origin','*')
+
     const res = new Response('',{headers:header, status:301})
 
     //PUT IN CACHE IF 200
@@ -159,7 +174,8 @@ API.get('/video/:p/:id', async (req, event) => {
 
     header.set('Cache-Control', 'public, max-age=18000');
     header.set('location',video_url)
-    
+    header.set('Access-Control-Allow-Origin','*')
+
     const res = new Response('',{headers:header, status:301})
 
     //PUT IN CACHE IF 200
