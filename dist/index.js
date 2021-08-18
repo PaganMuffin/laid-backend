@@ -1,205 +1,414 @@
 (() => {
-  // node_modules/regexparam/dist/index.mjs
-  function parse(str, loose) {
-    if (str instanceof RegExp)
-      return { keys: false, pattern: str };
-    var c3, o2, tmp, ext, keys = [], pattern = "", arr = str.split("/");
-    arr[0] || arr.shift();
-    while (tmp = arr.shift()) {
-      c3 = tmp[0];
-      if (c3 === "*") {
-        keys.push("wild");
-        pattern += "/(.*)";
-      } else if (c3 === ":") {
-        o2 = tmp.indexOf("?", 1);
-        ext = tmp.indexOf(".", 1);
-        keys.push(tmp.substring(1, !!~o2 ? o2 : !!~ext ? ext : tmp.length));
-        pattern += !!~o2 && !~ext ? "(?:/([^/]+?))?" : "/([^/]+?)";
-        if (!!~ext)
-          pattern += (!!~o2 ? "?" : "") + "\\" + tmp.substring(ext);
-      } else {
-        pattern += "/" + tmp;
-      }
-    }
-    return {
-      keys,
-      pattern: new RegExp("^" + pattern + (loose ? "(?=$|/)" : "/?$"), "i")
-    };
-  }
-
-  // node_modules/worktop/request/index.mjs
-  function n(e) {
-    let r, t, a2, o2 = {};
-    for ([r, t] of e)
-      o2[r] = (a2 = o2[r]) !== void 0 ? [].concat(a2, t) : t;
-    return o2;
-  }
-  async function i(e, r) {
-    if (!(!e.body || !r))
-      return ~r.indexOf("application/json") ? e.json() : ~r.indexOf("multipart/form-data") || ~r.indexOf("application/x-www-form-urlencoded") ? e.formData().then(n) : ~r.indexOf("text/") ? e.text() : e.arrayBuffer();
-  }
-  function f(e) {
-    let r = this, { request: t } = e, a2 = new URL(t.url);
-    return r.url = t.url, r.method = t.method, r.headers = t.headers, r.extend = e.waitUntil.bind(e), r.cf = t.cf, r.params = {}, r.path = a2.pathname, r.hostname = a2.hostname, r.origin = a2.origin, r.query = a2.searchParams, r.search = a2.search, r.body = i.bind(0, t, r.headers.get("content-type")), r.body.blob = t.blob.bind(t), r.body.text = t.text.bind(t), r.body.arrayBuffer = t.arrayBuffer.bind(t), r.body.formData = t.formData.bind(t), r.body.json = t.json.bind(t), r;
-  }
-
-  // node_modules/worktop/utils/index.mjs
-  var o = /* @__PURE__ */ new TextEncoder();
-  function h(r) {
-    return r ? o.encode(r).byteLength : 0;
-  }
-
-  // node_modules/worktop/response/index.mjs
-  var s = "content-type";
-  var i2 = "content-length";
-  function h2(u) {
-    var e = this, r = e.headers = new Headers({
-      "Cache-Control": "private, no-cache"
-    });
-    return e.body = "", e.finished = false, e.status = e.statusCode = 200, e.getHeaders = () => Object.fromEntries(r), e.getHeaderNames = () => [...r.keys()], e.hasHeader = r.has.bind(r), e.getHeader = r.get.bind(r), e.removeHeader = r.delete.bind(r), e.setHeader = r.set.bind(r), Object.defineProperty(e, "status", {
-      set: (n2) => {
-        e.statusCode = n2;
-      },
-      get: () => e.statusCode
-    }), e.end = (n2) => {
-      e.finished || (e.finished = true, e.body = n2);
-    }, e.writeHead = (n2, t) => {
-      e.statusCode = n2;
-      for (let d2 in t)
-        r.set(d2, t[d2]);
-    }, e.send = (n2, t, d2) => {
-      let a2 = typeof t, o2 = {};
-      for (let p in d2)
-        o2[p.toLowerCase()] = d2[p];
-      let f2 = o2[i2] || e.getHeader(i2), l2 = o2[s] || e.getHeader(s);
-      t == null ? t = "" : a2 === "object" ? (t = JSON.stringify(t), l2 = l2 || "application/json;charset=utf-8") : a2 !== "string" && (t = String(t)), o2[s] = l2 || "text/plain", o2[i2] = f2 || String(t.byteLength || h(t)), n2 === 204 || n2 === 205 || n2 === 304 ? (e.removeHeader(i2), e.removeHeader(s), delete o2[i2], delete o2[s], t = null) : u === "HEAD" && (t = null), e.writeHead(n2, o2), e.end(t);
-    }, e;
-  }
-
-  // node_modules/worktop/router/index.mjs
-  var c = {
-    "400": "Bad Request",
-    "401": "Unauthorized",
-    "403": "Forbidden",
-    "404": "Not Found",
-    "405": "Method Not Allowed",
-    "406": "Not Acceptable",
-    "409": "Conflict",
-    "410": "Gone",
-    "411": "Length Required",
-    "413": "Payload Too Large",
-    "422": "Unprocessable Entity",
-    "426": "Upgrade Required",
-    "428": "Precondition Required",
-    "429": "Too Many Requests",
-    "500": "Internal Server Error",
-    "501": "Not Implemented",
-    "502": "Bad Gateway",
-    "503": "Service Unavailable",
-    "504": "Gateway Timeout"
+  var __create = Object.create;
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __getProtoOf = Object.getPrototypeOf;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __markAsModule = (target) => __defProp(target, "__esModule", { value: true });
+  var __commonJS = (cb, mod) => function __require() {
+    return mod || (0, cb[Object.keys(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
   };
-  function m(t) {
-    return (o2) => o2.respondWith(t(o2));
-  }
-  function w(t) {
-    addEventListener("fetch", m(t));
-  }
-  var l = false;
-  async function d(t, o2, s3, r, ...e) {
-    let n2 = await t(s3, r, ...e);
-    if (n2 instanceof Response)
-      return n2;
-    if (o2 || r.finished)
-      return new Response(r.body, r);
-  }
-  function y(t, o2, s3) {
-    let r = {}, e, n2, a2, i4, p;
-    if (n2 = t[o2]) {
-      if (e = n2.__s[s3])
-        return { params: r, handler: e.handler };
-      for ([a2, i4] of n2.__d)
-        if (p = a2.exec(s3), p !== null) {
-          if (p.groups !== void 0)
-            for (e in p.groups)
-              r[e] = p.groups[e];
-          else if (i4.keys.length > 0)
-            for (e = 0; e < i4.keys.length; )
-              r[i4.keys[e++]] = p[e];
-          return { params: r, handler: i4.handler };
-        }
+  var __reExport = (target, module, desc) => {
+    if (module && typeof module === "object" || typeof module === "function") {
+      for (let key of __getOwnPropNames(module))
+        if (!__hasOwnProp.call(target, key) && key !== "default")
+          __defProp(target, key, { get: () => module[key], enumerable: !(desc = __getOwnPropDesc(module, key)) || desc.enumerable });
     }
-  }
-  function x() {
-    let t, o2 = {};
-    return t = {
-      add(s3, r, e) {
-        let n2 = o2[s3];
-        if (n2 === void 0 && (n2 = o2[s3] = {
-          __d: new Map(),
-          __s: {}
-        }), r instanceof RegExp)
-          n2.__d.set(r, { keys: [], handler: e });
-        else if (/[:|*]/.test(r)) {
-          let { keys: a2, pattern: i4 } = parse(r);
-          n2.__d.set(i4, { keys: a2, handler: e });
-        } else
-          n2.__s[r] = { keys: [], handler: e };
-      },
-      onerror(s3, r, e, n2) {
-        let a2 = c[e = e || 500], i4 = n2 && n2.message || a2 || String(e);
-        return new Response(i4, { status: e, statusText: a2 });
-      },
-      async run(s3) {
-        let r, e = new f(s3), n2 = new h2(e.method);
-        if (l = !!t.prepare) {
-          if (r = await d(t.prepare, false, e, n2), r)
-            return r;
-          l = false;
-        }
-        return r = y(o2, e.method, e.path), r ? (e.params = r.params, d(r.handler, true, e, n2).catch((a2) => d(t.onerror, true, e, n2, 500, a2))) : d(t.onerror, true, e, n2, 404);
-      }
-    };
-  }
+    return target;
+  };
+  var __toModule = (module) => {
+    return __reExport(__markAsModule(__defProp(module != null ? __create(__getProtoOf(module)) : {}, "default", module && module.__esModule && "default" in module ? { get: () => module.default, enumerable: true } : { value: module, enumerable: true })), module);
+  };
 
-  // node_modules/worktop/cache/index.mjs
-  var s2 = caches.default;
-  async function a(t, e) {
-    let n2 = e || t.request, o2 = typeof n2 != "string" && n2.method === "HEAD";
-    o2 && (n2 = new Request(n2, { method: "GET" }));
-    let r = await s2.match(n2);
-    return o2 && r && (r = new Response(null, r)), r;
-  }
-  function c2(t, e, n2) {
-    let o2 = n2 || t.request;
-    return (typeof o2 == "string" || o2.method === "GET") && i3(e) && (e.headers.has("Set-Cookie") && (e = new Response(e.body, e), e.headers.append("Cache-Control", "private=Set-Cookie")), t.waitUntil(s2.put(o2, e.clone()))), e;
-  }
-  function i3(t) {
-    if (t.status === 206 || ~(t.headers.get("Vary") || "").indexOf("*"))
-      return false;
-    let n2 = t.headers.get("Cache-Control") || "";
-    return !/(private|no-cache|no-store)/i.test(n2);
-  }
+  // node_modules/itty-router/dist/itty-router.min.js
+  var require_itty_router_min = __commonJS({
+    "node_modules/itty-router/dist/itty-router.min.js"(exports, module) {
+      module.exports = { Router: ({ base: t = "", routes: l = [] } = {}) => ({ __proto__: new Proxy({}, { get: (e, a, o) => (e2, ...r) => l.push([a.toUpperCase(), RegExp(`^${(t + e2).replace(/(\/?)\*/g, "($1.*)?").replace(/\/$/, "").replace(/:(\w+)(\?)?(\.)?/g, "$2(?<$1>[^/]+)$2$3").replace(/\.(?=[\w(])/, "\\.")}/*$`), r]) && o }), routes: l, async handle(e, ...r) {
+        let a, o, t2 = new URL(e.url);
+        e.query = Object.fromEntries(t2.searchParams);
+        for (var [p, s, u] of l)
+          if ((p === e.method || p === "ALL") && (o = t2.pathname.match(s))) {
+            e.params = o.groups;
+            for (var c2 of u)
+              if ((a = await c2(e.proxy || e, ...r)) !== void 0)
+                return a;
+          }
+      } }) };
+    }
+  });
 
   // src/index.js
-  var API = new x();
-  API.add("GET", "/cache", async (req, res) => {
-    const url = req.url;
-    const isCache = await a(null, url);
-    console.log(isCache);
-    if (isCache) {
-      res.send(200, isCache);
-      res.end();
+  var import_itty_router = __toModule(require_itty_router_min());
+
+  // src/cda/decode.js
+  var decode = (a) => {
+    String.fromCharCode(("Z" >= a ? 11 : 344) >= (c = a.charCodeAt(0) + 22) ? c : c - 11);
+    a = a.replace("_XDDD", "");
+    a = a.replace("_CDA", "");
+    a = a.replace("_ADC", "");
+    a = a.replace("_CXD", "");
+    a = a.replace("_QWE", "");
+    a = a.replace("_Q5", "");
+    a = a.replace("_IKSDE", "");
+    a = K(a);
+    a = ba(a);
+    return a;
+  };
+  var K = (a) => {
+    return a.replace(/[a-zA-Z]/g, function(a2) {
+      return String.fromCharCode(("Z" >= a2 ? 90 : 122) >= (a2 = a2.charCodeAt(0) + 13) ? a2 : a2 - 26);
+    });
+  };
+  var ba = (a) => {
+    a = K(a);
+    a = ca(a);
+    a = aa(a);
+    return a;
+  };
+  var aa = (a) => {
+    String.fromCharCode(("Z" >= a ? 82 : 132) >= (c = a.charCodeAt(0) + 11) ? c : c - 55);
+    return L(a);
+  };
+  var L = (a) => {
+    for (var b = [], e = 0; e < a.length; e++) {
+      var f = a.charCodeAt(e);
+      b[e] = 33 <= f && 126 >= f ? String.fromCharCode(33 + (f + 14) % 94) : String.fromCharCode(f);
     }
-    res.setHeader("Cache-Control", "public, max-age=60");
-    const obj = {
-      "timestamp": new Date().getTime(),
-      "colo": req.cf.colo,
-      "country": req.cf.country
+    return da(b.join(""));
+  };
+  var ca = (a) => {
+    return decodeURIComponent(a);
+  };
+  var da = (a) => {
+    a = a.replace(".cda.mp4", "");
+    a = a.replace(".2cda.pl", ".cda.pl");
+    a = a.replace(".3cda.pl", ".cda.pl");
+    return -1 < a.indexOf("/upstream") ? (a = a.replace("/upstream", ".mp4/upstream"), "https://" + a) : "https://" + a + ".mp4";
+  };
+
+  // src/cda/class.js
+  var cda_quality = {
+    "vl": "360p",
+    "lq": "480p",
+    "sd": "720p",
+    "hd": "1080p"
+  };
+  var get_video_info = class {
+    title = null;
+    id = null;
+    duration = null;
+    thumb = null;
+    type = null;
+    element(element) {
+      const data = JSON.parse(element.getAttribute("player_data"));
+      this.title = decodeURI(data["video"]["title"]).replaceAll(/%2C/gi, ",");
+      this.id = data["video"]["id"];
+      this.duration = data["video"]["duration"];
+      this.thumb = data["video"]["thumb"];
+      this.type = data["video"]["type"];
+    }
+  };
+  var get_video_qualities = class {
+    arr = [];
+    element(element) {
+      const q = element.getAttribute("data-quality");
+      this.arr.push({
+        "quality": q,
+        "resolution": cda_quality[q]
+      });
+    }
+  };
+  var get_video_url = class {
+    url = null;
+    element(element) {
+      const data = JSON.parse(element.getAttribute("player_data"));
+      console.log(data);
+      this.url = decode(data["video"]["file"]);
+    }
+  };
+  var check_premiun = class {
+    premium = false;
+    element(el) {
+      this.premium = true;
+    }
+  };
+
+  // src/cda/index.js
+  var options = (key) => {
+    return {
+      method: "GET",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
+      },
+      cf: {
+        cacheTtl: 3600,
+        cacheEverything: true,
+        cacheKey: key
+      }
     };
-    res.send(200, obj);
-    console.log(i3(res));
-    const Cached = c2(null, res, url);
-    res.end();
+  };
+  var GEN_URL = "https://backend.pamu.ga";
+  var check_resolutions = async (cda_id) => {
+    const url = `https://ebd.cda.pl/620x395/${cda_id}`;
+    const f = await fetch(url, options(url));
+    const new_url = f.url;
+    const info = new get_video_info();
+    const arr = new get_video_qualities();
+    const is_premium = new check_premiun();
+    await new HTMLRewriter().on(`.quality-btn`, arr).on(`#mediaplayer${cda_id}`, info).on(`.xs-txt`, is_premium).transform(f).text();
+    info["code"] = f.status;
+    info["premium"] = is_premium["premium"];
+    info["url"] = new_url;
+    return { info, arr: arr["arr"] };
+  };
+  var get_url = async (url, res, cda_id) => {
+    const s = res ? `?wersja=${res}` : "";
+    const f = await fetch(`${url}${s}`, options(`${url}${s}`));
+    console.log(f.status);
+    if (f.status !== 200) {
+      return null;
+    }
+    const video_url = new get_video_url();
+    await new HTMLRewriter().on(`#mediaplayer${cda_id}`, video_url).transform(f).text();
+    return video_url["url"];
+  };
+  var get_data = async (cda_id) => {
+    if (!cda_id) {
+      return { "code": 400, "msg": "Bad Request", "data": null };
+    }
+    const d = await check_resolutions(cda_id);
+    const arr = d["arr"];
+    let info = d["info"];
+    if (info["code"] === 404) {
+      return { "code": info["code"], "msg": "Not Found", "data": null };
+    }
+    if (info["code"] !== 200) {
+      return { "code": info["code"], "msg": "Blabla", "data": null };
+    }
+    if (info["premium"]) {
+      return { "code": 400, "msg": "Premium", "data": null };
+    }
+    let q = [];
+    if (info["title"] && info["duration"] && arr.length === 0) {
+      q = [{
+        "quality": "vl",
+        "resolution": "360p",
+        "url": `${GEN_URL}/video/${info["type"] === "partner" ? "1" : "0"}/${cda_id}/`
+      }];
+    } else {
+      q = await Promise.all(arr.map(async (x) => {
+        return {
+          "quality": x["quality"],
+          "resolution": x["resolution"],
+          "url": `${GEN_URL}/video/${info["type"] === "partner" ? "1" : "0"}/${cda_id}/${x["resolution"]}`
+        };
+      }));
+    }
+    delete info["url"];
+    delete info["premium"];
+    delete info["id"];
+    delete info["type"];
+    delete info["code"];
+    info["qualities"] = q;
+    return { "code": 200, "msg": "ok", "data": info };
+  };
+
+  // src/functions/index.js
+  var build_player = (data, url) => {
+    return `
+    <html>
+        <head>
+            <!-- META  -->
+            <title>${data["data"]["title"]}</title>
+            <meta property="og:title" content="${data["data"]["title"]}" />
+            <meta property="og:url" content="${url}" />
+            <meta property="og:image" content="${data["data"]["thumb"]}" />
+            <meta property="og:type" content="video.movie" />
+            <meta property="og:site_name" content="PaMu" />
+            <style>
+                body {
+                    margin: 0 auto;
+                    background-color: black;
+                }
+            </style>     
+        </head>
+
+        <body>
+            <video id="player"></video>
+        </body>
+
+        <script src="https://cdn.plyr.io/3.6.8/plyr.js"><\/script>
+        <link rel="stylesheet" href="https://cdn.plyr.io/3.6.8/plyr.css" />
+        <script>
+            const player = new Plyr('#player');
+            player.source = {
+                type: 'video',
+                title: '${data["data"]["title"]}',
+                sources: ${JSON.stringify(data["data"]["qualities"].map((x) => {
+      return { "src": x["url"], "type": "video/mp4", "size": x["resolution"].replace("p", "") };
+    }))},
+                poster: '${data["data"]["thumb"]}',
+            };
+            player.on('qualitychange', (e) => {
+                player.play()
+            })
+        <\/script>
+        <style>
+            .plyr__controls{
+                position:fixed!important;
+            }
+            .plyr__video-wrapper{
+                height: 100vh;
+            }
+        </style>
+    </html>
+`;
+  };
+  var namespace = "NS_64dadcc7-59a6-4b78-9d0c-7eea040cdec3";
+  var update_stats_global = async (key) => {
+    const url = `https://api.countapi.xyz/hit/${namespace}/${key}`;
+    await fetch(url);
+  };
+  var get_stats_global = async () => {
+    const endpoints = [
+      "cda-gen-player",
+      "cda-gen-json",
+      "db-read-player",
+      "db-read-json",
+      "db-entries"
+    ];
+    const p_arr = await Promise.all(endpoints.map((x) => fetch(`https://api.countapi.xyz/get/${namespace}/${x}`)));
+    const r_arr = await Promise.all(p_arr.map(async (x) => {
+      const name = x.url.split("/").pop();
+      return {
+        "name": name,
+        "value": (await x.json())["value"]
+      };
+    }));
+    return r_arr;
+  };
+
+  // src/index.js
+  var API = (0, import_itty_router.Router)();
+  API.get(`/player/:id`, async (req, event) => {
+    console.log("START");
+    const cda_id = req.params.id;
+    const header = new Headers();
+    let cache = caches.default;
+    const url = new URL(req.url);
+    const url_to_check = url.origin + url.pathname;
+    const inCache = await cache.match(url_to_check);
+    if (inCache) {
+      console.log("FROM CACHE");
+      if (inCache.status === 200)
+        event.waitUntil(update_stats_global("cda-gen-player"));
+      return inCache;
+    }
+    const data = await get_data(cda_id);
+    let html = null;
+    if (data["code"] === 200) {
+      header.set("content-type", "text/html; charset=UTF-8");
+      header.set("Cache-Control", "public, max-age=60");
+      html = build_player(data, req["url"]);
+      event.waitUntil(update_stats_global("cda-gen-player"));
+    } else {
+      header.set("content-type", "application/json");
+    }
+    const res = new Response(html ? html : JSON.stringify(data["data"]), {
+      headers: header,
+      status: data["code"]
+    });
+    if (data["code"] === 200) {
+      console.log("PUT TO CACHE");
+      const new_req = new Request(url_to_check, req);
+      event.waitUntil(cache.put(new_req, res.clone()));
+    }
+    return res;
   });
-  w(API.run);
+  API.get("/json/:id", async (req, event) => {
+    console.log("START");
+    const cda_id = req.params.id;
+    const header = new Headers();
+    let cache = caches.default;
+    const url = new URL(req.url);
+    const url_to_check = url.origin + url.pathname;
+    const inCache = await cache.match(url_to_check);
+    if (inCache) {
+      console.log("FROM CACHE");
+      if (inCache.status === 200)
+        event.waitUntil(update_stats_global("cda-gen-json"));
+      return inCache;
+    }
+    const data = await get_data(cda_id);
+    data["timestamp"] = new Date().getTime();
+    if (data["code"] === 200) {
+      console.log("UPDATE COUNTER");
+      header.set("Cache-Control", "public, max-age=60");
+      event.waitUntil(update_stats_global("cda-gen-json"));
+    }
+    const res = new Response(JSON.stringify(data), { headers: header, status: data["code"] });
+    if (data["code"] === 200) {
+      console.log("PUT TO CACHE");
+      const new_req = new Request(url_to_check, req);
+      event.waitUntil(cache.put(new_req, res.clone()));
+    }
+    return res;
+  });
+  API.get("/video/:p/:id/:res", async (req, event) => {
+    let cache = caches.default;
+    const url = new URL(req.url);
+    const url_to_check = url.origin + url.pathname;
+    const inCache = await cache.match(url_to_check);
+    if (inCache) {
+      console.log("FROM CACHE");
+      return inCache;
+    }
+    const partner = req.params.p === "1" ? true : false;
+    const cda_id = req.params.id;
+    const resolution = req.params.res;
+    const cda_url = `https://ebd.cda.pl/620x395/${cda_id}${partner ? "/vfilm" : ""}`;
+    const video_url = await get_url(cda_url, resolution, cda_id);
+    if (video_url === null) {
+      return new Response("", { status: 500 });
+    }
+    const header = new Headers();
+    header.set("Cache-Control", "public, max-age=18000");
+    header.set("location", video_url);
+    const res = new Response("", { headers: header, status: 301 });
+    console.log("PUT TO CACHE");
+    const new_req = new Request(url_to_check, req);
+    event.waitUntil(cache.put(new_req, res.clone()));
+    return res;
+  });
+  API.get("/video/:p/:id", async (req, event) => {
+    let cache = caches.default;
+    const url = new URL(req.url);
+    const url_to_check = url.origin + url.pathname;
+    const inCache = await cache.match(url_to_check);
+    if (inCache) {
+      console.log("FROM CACHE");
+      return inCache;
+    }
+    const partner = req.params.p === "1" ? true : false;
+    const cda_id = req.params.id;
+    const cda_url = `https://ebd.cda.pl/620x395/${cda_id}${partner ? "/vfilm" : ""}`;
+    const video_url = await get_url(cda_url, null, cda_id);
+    if (video_url === null) {
+      return new Response("", { status: 500 });
+    }
+    const header = new Headers();
+    header.set("Cache-Control", "public, max-age=18000");
+    header.set("location", video_url);
+    const res = new Response("", { headers: header, status: 301 });
+    console.log("PUT TO CACHE");
+    const new_req = new Request(url_to_check, req);
+    event.waitUntil(cache.put(new_req, res.clone()));
+    return res;
+  });
+  API.get("/stats", async (req, res) => {
+    return new Response(JSON.stringify(await get_stats_global()), { status: 200 });
+  });
+  API.all("*", () => new Response("Not Found.", { status: 404 }));
+  addEventListener("fetch", (event) => event.respondWith(API.handle(event.request, event)));
 })();

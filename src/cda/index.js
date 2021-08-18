@@ -79,6 +79,9 @@ export const get_url = async (url, res, cda_id) => {
     const s = res ? `?wersja=${res}` : ''
     const f = await fetch(`${url}${s}`,options(`${url}${s}`))
     console.log(f.status)
+    if(f.status !== 200){
+        return null
+    }
     const video_url  = new get_video_url() 
     await new HTMLRewriter()
         .on(`#mediaplayer${cda_id}`, video_url)
