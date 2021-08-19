@@ -19,8 +19,8 @@ const options = (key) => {
     }
 }
 
-//const GEN_URL = 'https://backend.pamu.ga'
-const GEN_URL = 'http://localhost:8787'
+const GEN_URL = 'https://backend.pamu.ga'
+//const GEN_URL = 'http://localhost:8787'
 
 export const check_resolutions = async (cda_id) => {
     const url = `https://ebd.cda.pl/620x395/${cda_id}`
@@ -124,7 +124,7 @@ export const get_data = async (cda_id)  => {
                 'url':`${GEN_URL}/video/${info['type'] === 'partner' ? '1' : '0'}/${cda_id}/`
                 //'url':await get_url(info['url'],null, cda_id)
             }]
-        delete info['quality_data']
+        
     } else {
         q = await Promise.all(arr.map(async (x) => {
             return {
@@ -137,7 +137,7 @@ export const get_data = async (cda_id)  => {
 
     }
 
-
+    delete info['quality_data']
     delete info['url']
     delete info['premium']
     delete info['id']

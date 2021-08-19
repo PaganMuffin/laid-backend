@@ -48,7 +48,6 @@ export class get_video_url {
 
     element(element){
         const data = JSON.parse(element.getAttribute('player_data'))
-        console.log(data)
         this.url = decode(data['video']['file'])
     }
 }

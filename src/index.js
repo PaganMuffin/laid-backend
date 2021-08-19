@@ -18,7 +18,12 @@ const CORS_Test = (req, event) => {
     //return new Response("TEST", {status:400})
 }
 
-API.get(`/player/:id`, async (req, event) => {
+const show_request = (req) => {
+    console.log(req.headers.get('cf-connecting-ip'), req.cf.colo, req.cf.country, req.cf.region, req.headers.get('user-agent'))
+}
+
+API.get(`/player/:id`, show_request, async (req, event) => {
+    
     console.log("START")
     const cda_id = req.params.id
     const header = new Headers()
@@ -67,7 +72,7 @@ API.get(`/player/:id`, async (req, event) => {
 })
 
 
-API.get('/json/:id', async (req, event) => {
+API.get('/json/:id', show_request, async (req, event) => {
     console.log("START")
     const cda_id = req.params.id
     const header = new Headers()
@@ -89,7 +94,6 @@ API.get('/json/:id', async (req, event) => {
     const data = await get_data(cda_id)
     data['timestamp'] = new Date().getTime()
     if(data['code'] === 200){
-        console.log("UPDATE COUNTER")
         header.set('Cache-Control', 'public, max-age=60')
         event.waitUntil(update_stats_global('cda-gen-json'))
     }
@@ -110,7 +114,7 @@ API.get('/json/:id', async (req, event) => {
     return res
 })
 
-API.get('/video/:p/:id/:res', async (req, event) => {
+API.get('/video/:p/:id/:res',show_request, async (req, event) => {
 
     //CACHE CHECK
     let cache = caches.default;
@@ -149,7 +153,7 @@ API.get('/video/:p/:id/:res', async (req, event) => {
     return res
 })
 
-API.get('/video/:p/:id', async (req, event) => {
+API.get('/video/:p/:id',show_request, async (req, event) => {
     //CACHE CHECK
     let cache = caches.default;
     const url = new URL(req.url)
@@ -187,7 +191,7 @@ API.get('/video/:p/:id', async (req, event) => {
     return res
 })
 
-API.head('/video/:p/:id/:res', async (req, event) => {
+API.head('/video/:p/:id/:res',show_request, async (req, event) => {
 
     //CACHE CHECK
     let cache = caches.default;
@@ -226,7 +230,7 @@ API.head('/video/:p/:id/:res', async (req, event) => {
     return res
 })
 
-API.head('/video/:p/:id', async (req, event) => {
+API.head('/video/:p/:id',show_request, async (req, event) => {
     //CACHE CHECK
     let cache = caches.default;
     const url = new URL(req.url)
@@ -269,7 +273,9 @@ API.get('/stats', async (req, res) => {
     return new Response(JSON.stringify(await get_stats_global()), {status:200})
 })
 
-API.all('*', () => new Response('Not Found.', { status: 404 }))
+API.all('*', () => new Response('Not Found.', { status: 404, headers: {
+   'Access-Control-Allow-Origin':"*" 
+} }))
 
 addEventListener('fetch', event =>
   event.respondWith(API.handle(event.request, event))

@@ -125,7 +125,6 @@
     url = null;
     element(element) {
       const data = JSON.parse(element.getAttribute("player_data"));
-      console.log(data);
       this.url = decode(data["video"]["file"]);
     }
   };
@@ -150,7 +149,7 @@
       }
     };
   };
-  var GEN_URL = "http://localhost:8787";
+  var GEN_URL = "https://backend.pamu.ga";
   var check_resolutions = async (cda_id) => {
     const url = `https://ebd.cda.pl/620x395/${cda_id}`;
     const f = await fetch(url, options(url));
@@ -198,7 +197,6 @@
         "resolution": info["quality_data"]["h"] + "p",
         "url": `${GEN_URL}/video/${info["type"] === "partner" ? "1" : "0"}/${cda_id}/`
       }];
-      delete info["quality_data"];
     } else {
       q = await Promise.all(arr.map(async (x) => {
         return {
@@ -208,6 +206,7 @@
         };
       }));
     }
+    delete info["quality_data"];
     delete info["url"];
     delete info["premium"];
     delete info["id"];
@@ -297,7 +296,10 @@
 
   // src/index.js
   var API = (0, import_itty_router.Router)();
-  API.get(`/player/:id`, async (req, event) => {
+  var show_request = (req) => {
+    console.log(req.headers.get("cf-connecting-ip"), req.cf.colo, req.cf.country, req.cf.region, req.headers.get("user-agent"));
+  };
+  API.get(`/player/:id`, show_request, async (req, event) => {
     console.log("START");
     const cda_id = req.params.id;
     const header = new Headers();
@@ -333,7 +335,7 @@
     }
     return res;
   });
-  API.get("/json/:id", async (req, event) => {
+  API.get("/json/:id", show_request, async (req, event) => {
     console.log("START");
     const cda_id = req.params.id;
     const header = new Headers();
@@ -350,7 +352,6 @@
     const data = await get_data(cda_id);
     data["timestamp"] = new Date().getTime();
     if (data["code"] === 200) {
-      console.log("UPDATE COUNTER");
       header.set("Cache-Control", "public, max-age=60");
       event.waitUntil(update_stats_global("cda-gen-json"));
     }
@@ -363,7 +364,7 @@
     }
     return res;
   });
-  API.get("/video/:p/:id/:res", async (req, event) => {
+  API.get("/video/:p/:id/:res", show_request, async (req, event) => {
     let cache = caches.default;
     const url = new URL(req.url);
     const url_to_check = url.origin + url.pathname;
@@ -390,7 +391,7 @@
     event.waitUntil(cache.put(new_req, res.clone()));
     return res;
   });
-  API.get("/video/:p/:id", async (req, event) => {
+  API.get("/video/:p/:id", show_request, async (req, event) => {
     let cache = caches.default;
     const url = new URL(req.url);
     const url_to_check = url.origin + url.pathname;
@@ -416,7 +417,7 @@
     event.waitUntil(cache.put(new_req, res.clone()));
     return res;
   });
-  API.head("/video/:p/:id/:res", async (req, event) => {
+  API.head("/video/:p/:id/:res", show_request, async (req, event) => {
     let cache = caches.default;
     const url = new URL(req.url);
     const url_to_check = url.origin + url.pathname;
@@ -443,7 +444,7 @@
     event.waitUntil(cache.put(new_req, res.clone()));
     return res;
   });
-  API.head("/video/:p/:id", async (req, event) => {
+  API.head("/video/:p/:id", show_request, async (req, event) => {
     let cache = caches.default;
     const url = new URL(req.url);
     const url_to_check = url.origin + url.pathname;
@@ -472,6 +473,8 @@
   API.get("/stats", async (req, res) => {
     return new Response(JSON.stringify(await get_stats_global()), { status: 200 });
   });
-  API.all("*", () => new Response("Not Found.", { status: 404 }));
+  API.all("*", () => new Response("Not Found.", { status: 404, headers: {
+    "Access-Control-Allow-Origin": "*"
+  } }));
   addEventListener("fetch", (event) => event.respondWith(API.handle(event.request, event)));
 })();
