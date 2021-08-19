@@ -227,7 +227,7 @@
             <meta property="og:url" content="${url}" />
             <meta property="og:image" content="${data["data"]["thumb"]}" />
             <meta property="og:type" content="video.movie" />
-            <meta property="og:site_name" content="PaMu" />
+            <link rel="icon" type="image/png" href="https://pamu.ga/android-icon-144x144.png"/>
             <style>
                 body {
                     margin: 0 auto;
