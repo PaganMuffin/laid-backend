@@ -6,11 +6,13 @@ import { check_premiun, get_video_info, get_video_qualities, get_video_url } fro
 // 404 7231309a2
 // GIT 8143319c8
 // Jedna rozdzielczość 81332304a
-const options = (key) => {
-    return { method: 'GET',
+const options = (key, method = 'GET', body = null) => {
+    return {
+        method: method,
         headers: {
             "User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36'
         },
+        body: body,
         cf: {
             cacheTtl: 3600,
             cacheEverything: true,
@@ -19,8 +21,8 @@ const options = (key) => {
     }
 }
 
-const GEN_URL = 'https://backend.pamu.ga'
-//const GEN_URL = 'http://localhost:8787'
+//const GEN_URL = 'https://backend.pamu.ga'
+const GEN_URL = 'http://localhost:8787'
 
 export const check_resolutions = async (cda_id) => {
     const url = `https://ebd.cda.pl/620x395/${cda_id}`
@@ -28,10 +30,9 @@ export const check_resolutions = async (cda_id) => {
     const new_url = f.url
         
     const info = new get_video_info()
-    const arr = new get_video_qualities()
+
     const is_premium = new check_premiun()
     await new HTMLRewriter()
-        .on(`.quality-btn`, arr)
         .on(`#mediaplayer${cda_id}`, info)
         .on(`.xs-txt`, is_premium)
         .transform(f)
@@ -41,7 +42,7 @@ export const check_resolutions = async (cda_id) => {
     info['premium'] = is_premium['premium']
     info['url'] = new_url
 
-    return {info, arr:arr['arr']}
+    return {info}
 }
 
 export const check_status = async (cda_id) => {
@@ -76,21 +77,28 @@ export const check_status = async (cda_id) => {
     }
 }
 
-export const get_url = async (url, res, cda_id) => {
+export const get_url = async (data) => {
 
-    const s = res ? `?wersja=${res}` : ''
-    const f = await fetch(`${url}${s}`,options(`${url}${s}`))
-    console.log(f.status)
+    const cda_url = 'https://www.cda.pl/'
+    const body = JSON.stringify(
+        {
+            "jsonrpc":"2.0",
+            "method":"videoGetLink",
+            "params":[
+                data['id'], //id
+                data['quality'], //quality
+                data['ts'], //ts
+                data['key'], //key
+                {}],
+            "id":2}
+    )
+    const f = await fetch(`${cda_url}`,options(cda_url + `?quality=${data['quality']}&id=${data['id']}`,'POST',body))
+
     if(f.status !== 200){
         return null
     }
-    const video_url  = new get_video_url() 
-    await new HTMLRewriter()
-        .on(`#mediaplayer${cda_id}`, video_url)
-        .transform(f)
-        .text()
     
-    return video_url['url']
+    return (await f.json()).result.resp
 }
  
 export const get_data = async (cda_id)  => {
@@ -101,7 +109,7 @@ export const get_data = async (cda_id)  => {
 
     const d = await check_resolutions(cda_id)
 
-    const arr = d['arr']
+    //const arr = d['arr']
     let info = d['info']
 
     if (info['code'] === 404){
@@ -114,36 +122,18 @@ export const get_data = async (cda_id)  => {
     if (info['premium']){
         return {'code':400, 'msg':"Premium", 'data':null}
     }
-
-    let q = []
     
-    if (info['title'] && info['duration'] && arr.length === 0){
-        q = [{
-                'quality':info['quality_data']['q'],
-                'resolution': info['quality_data']['h'] + 'p',
-                'url':`${GEN_URL}/video/${info['type'] === 'partner' ? '1' : '0'}/${cda_id}/`
-                //'url':await get_url(info['url'],null, cda_id)
-            }]
-        
-    } else {
-        q = await Promise.all(arr.map(async (x) => {
-            return {
-                'quality':x['quality'],
-                'resolution': x['resolution'],
-                'url':`${GEN_URL}/video/${info['type'] === 'partner' ? '1' : '0'}/${cda_id}/${x['resolution']}`
-                //'url':await get_url(info['url'], x['resolution'], cda_id)
-            }
-        }))
 
-    }
-
-    delete info['quality_data']
+    
+    //delete info['quality_data']
     delete info['url']
     delete info['premium']
     delete info['id']
     delete info['type']
     delete info['code']
+    delete info['hash']
+    delete info['hash2']
 
-    info['qualities'] = q
+
     return {'code':200, 'msg':"ok", 'data':info}
 }

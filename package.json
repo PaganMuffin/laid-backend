@@ -19,6 +19,7 @@
     "dependencies": {
         "@supabase/supabase-js": "^1.21.0",
         "itty-router": "^2.4.2",
+        "lz-string": "^1.4.4",
         "worktop": "^0.7.1"
     }
 }
