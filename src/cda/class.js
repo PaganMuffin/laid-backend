@@ -8,8 +8,6 @@ const cda_quality = {
     'hd':'1080p'
 }
 
-//const GEN_URL = 'https://backend.pamu.ga'
-const GEN_URL = 'http://localhost:8787'
 
 export class get_video_info {
     title = null;
@@ -24,7 +22,6 @@ export class get_video_info {
 
     element(element){
         const data = JSON.parse(element.getAttribute('player_data'))
-        console.log(data)
         this.title = decodeURI(data['video']['title']).replaceAll(/%2C/gi, ',')
         this.id = data['video']['id']
         this.duration = data['video']['durationFull']
@@ -47,7 +44,7 @@ export class get_video_info {
             return {
                 'quality':x[1],
                 'resolution': x[0],
-                'url':`${GEN_URL}/video/${base}`
+                'url':`${API_URL}/video/${base}`
             }
         })
 

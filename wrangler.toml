@@ -8,6 +8,9 @@ zone_id = ""
 [build]
 command = "npm run build"
 
+[vars]
+API_URL = "https://backend.pamu.ga"
+
 [build.upload]
 format = "service-worker"
 

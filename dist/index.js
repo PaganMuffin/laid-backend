@@ -503,7 +503,6 @@
 
   // src/cda/class.js
   var import_lz_string = __toModule(require_lz_string());
-  var GEN_URL = "http://localhost:8787";
   var get_video_info = class {
     title = null;
     id = null;
@@ -515,7 +514,6 @@
     qualities = null;
     element(element) {
       const data = JSON.parse(element.getAttribute("player_data"));
-      console.log(data);
       this.title = decodeURI(data["video"]["title"]).replaceAll(/%2C/gi, ",");
       this.id = data["video"]["id"];
       this.duration = data["video"]["durationFull"];
@@ -535,7 +533,7 @@
         return {
           "quality": x[1],
           "resolution": x[0],
-          "url": `${GEN_URL}/video/${base}`
+          "url": `${API_URL}/video/${base}`
         };
       });
     }
@@ -706,6 +704,7 @@
     console.log("START");
     const cda_id = req.params.id;
     const header = new Headers();
+    header.set("Access-Control-Allow-Origin", "*");
     let cache = caches.default;
     const url = new URL(req.url);
     const url_to_check = url.origin + url.pathname;
@@ -721,7 +720,6 @@
     if (data["code"] === 200) {
       header.set("content-type", "text/html; charset=UTF-8");
       header.set("Cache-Control", "public, max-age=60");
-      header.set("Access-Control-Allow-Origin", "*");
       html = build_player(data, req["url"]);
       event.waitUntil(update_stats_global("cda-gen-player"));
     } else {
@@ -742,6 +740,7 @@
     console.log("START");
     const cda_id = req.params.id;
     const header = new Headers();
+    header.set("Access-Control-Allow-Origin", "*");
     let cache = caches.default;
     const url = new URL(req.url);
     const url_to_check = url.origin + url.pathname;
@@ -753,11 +752,10 @@
       return inCache;
     }
     const data = await get_data(cda_id);
+    let res = new Response("", { status: data["code"], headers: header });
     data["timestamp"] = new Date().getTime();
-    let res = new Response("", { status: 500 });
     if (data["code"] === 200) {
       header.set("Cache-Control", "public, max-age=60");
-      header.set("Access-Control-Allow-Origin", "*");
       res = new Response(JSON.stringify(data), { headers: header, status: data["code"] });
       console.log("PUT TO CACHE");
       const new_req = new Request(url_to_check, req);
@@ -798,7 +796,7 @@
     event.waitUntil(update_stats_global("cda-gen-json"));
     return res;
   });
-  API.get("/stats", async (req, res) => {
+  API.get("/stats", show_request, async (req, res) => {
     return new Response(JSON.stringify(await get_stats_global()), { status: 200 });
   });
   API.all("*", () => new Response("Not Found.", { status: 404, headers: {
@@ -806,3 +804,4 @@
   } }));
   addEventListener("fetch", (event) => event.respondWith(API.handle(event.request, event)));
 })();
+//# sourceMappingURL=index.js.map

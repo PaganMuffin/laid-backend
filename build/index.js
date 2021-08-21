@@ -4,6 +4,7 @@ require('esbuild').build({
     entryPoints: ['src/index.js'],
     bundle: true,
     outfile: 'dist/index.js',
+    sourcemap: true,
     plugins: [
         externalGlobalPlugin({
           'cross-fetch': 'fetch',

@@ -21,9 +21,6 @@ const options = (key, method = 'GET', body = null) => {
     }
 }
 
-//const GEN_URL = 'https://backend.pamu.ga'
-const GEN_URL = 'http://localhost:8787'
-
 export const check_resolutions = async (cda_id) => {
     const url = `https://ebd.cda.pl/620x395/${cda_id}`
     const f = await fetch(url, options(url))
