@@ -18,10 +18,11 @@ export class get_video_info {
     hash = null;
     hash2 = null;
     qualities = null;
-
+    
 
     element(element){
         const data = JSON.parse(element.getAttribute('player_data'))
+        console.log(data)
         this.title = decodeURI(data['video']['title']).replaceAll(/%2C/gi, ',')
         this.id = data['video']['id']
         this.duration = data['video']['durationFull']
@@ -30,22 +31,12 @@ export class get_video_info {
         this.thumb = data['video']['thumb']
         this.type = data['video']['type']
         this.qualities = Object.entries(data['video']['qualities']).map((x) => {
-            
-            const data_string = JSON.stringify({
-                'id':this.id,
-                'quality':x[1],
-                'ts':data['video']['ts'],
-                'key':this.hash2,
-                'partner':this.partner === 'partner' ? 1 : 0
-            })
-        
-
-            const base = (compressToEncodedURIComponent(data_string))
             return {
                 'quality':x[1],
                 'resolution': x[0],
-                'url':`${API_URL}/video/${base}`
+                'url':`${API_URL}/video/${this.type === 'partner' ? 1 : 0}/${this.id}/${x[0]}`
             }
+            
         })
 
     }

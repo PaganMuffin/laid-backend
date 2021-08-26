@@ -74,28 +74,21 @@ export const check_status = async (cda_id) => {
     }
 }
 
-export const get_url = async (data) => {
+export const get_url = async (url, res, cda_id) => {
 
-    const cda_url = 'https://www.cda.pl/'
-    const body = JSON.stringify(
-        {
-            "jsonrpc":"2.0",
-            "method":"videoGetLink",
-            "params":[
-                data['id'], //id
-                data['quality'], //quality
-                data['ts'], //ts
-                data['key'], //key
-                {}],
-            "id":2}
-    )
-    const f = await fetch(`${cda_url}`,options(cda_url + `?quality=${data['quality']}&id=${data['id']}`,'POST',body))
-
+    const s = res ? `?wersja=${res}` : ''
+    const f = await fetch(`${url}${s}`,options(`${url}${s}`))
+    console.log(f.status)
     if(f.status !== 200){
         return null
     }
+    const video_url  = new get_video_url() 
+    await new HTMLRewriter()
+        .on(`#mediaplayer${cda_id}`, video_url)
+        .transform(f)
+        .text()
     
-    return (await f.json()).result.resp
+    return video_url['url']
 }
  
 export const get_data = async (cda_id)  => {

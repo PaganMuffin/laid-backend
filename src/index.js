@@ -118,8 +118,8 @@ API.get('/json/:id', show_request, async (req, event) => {
     return res
 })
 
-API.get('/video/:data',show_request, async (req, event) => {
-    //CACHE CHECK
+
+API.get('/video/:p/:id/:res',show_request, async (req, event) => {
     let cache = caches.default;
     const url = new URL(req.url)
     const url_to_check =  url.origin + url.pathname
@@ -131,34 +131,29 @@ API.get('/video/:data',show_request, async (req, event) => {
         return inCache
     }
 
-    let data = null
-    try{
-        data = JSON.parse(decompressFromEncodedURIComponent(req.params.data))
-    }
-    catch(e){
-        console.log(e)
-        return new Response('', {status:500})
-    }
-    console.log(data)
-
-    const video_url = await get_url(data)
-    
+    const partner = req.params.p === '1' ? true : false
+    const cda_id = req.params.id
+    const resolution = req.params.res
+    console.log(req.params)
+    const cda_url = `https://ebd.cda.pl/620x395/${cda_id}${partner ? '/vfilm' : ''}`
+    const video_url = await get_url(cda_url,resolution,cda_id)
     if(video_url === null){
         return new Response('', {status: 500})
     }
 
     const header = new Headers()
+
     header.set('Cache-Control', 'public, max-age=18000');
     header.set('location',video_url)
     header.set('Access-Control-Allow-Origin','*')
+
     const res = new Response('',{headers:header, status:301})
 
-   //PUT IN CACHE IF 200
+    //PUT IN CACHE IF 200
     console.log("PUT TO CACHE")
     const new_req = new Request(url_to_check, req)
     event.waitUntil(cache.put(new_req, res.clone()))
-    event.waitUntil(update_stats_global('cda-gen-json'))
-    
+
     return res
 })
 

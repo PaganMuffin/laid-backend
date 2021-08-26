@@ -501,6 +501,52 @@
   var import_itty_router = __toModule(require_itty_router_min());
   var import_lz_string2 = __toModule(require_lz_string());
 
+  // src/cda/decode.js
+  var decode = (a) => {
+    String.fromCharCode(("Z" >= a ? 11 : 344) >= (c = a.charCodeAt(0) + 22) ? c : c - 11);
+    a = a.replace("_XDDD", "");
+    a = a.replace("_CDA", "");
+    a = a.replace("_ADC", "");
+    a = a.replace("_CXD", "");
+    a = a.replace("_QWE", "");
+    a = a.replace("_Q5", "");
+    a = a.replace("_IKSDE", "");
+    a = K(a);
+    a = ba(a);
+    return a;
+  };
+  var K = (a) => {
+    return a.replace(/[a-zA-Z]/g, function(a2) {
+      return String.fromCharCode(("Z" >= a2 ? 90 : 122) >= (a2 = a2.charCodeAt(0) + 13) ? a2 : a2 - 26);
+    });
+  };
+  var ba = (a) => {
+    a = K(a);
+    a = ca(a);
+    a = aa(a);
+    return a;
+  };
+  var aa = (a) => {
+    String.fromCharCode(("Z" >= a ? 82 : 132) >= (c = a.charCodeAt(0) + 11) ? c : c - 55);
+    return L(a);
+  };
+  var L = (a) => {
+    for (var b = [], e = 0; e < a.length; e++) {
+      var f = a.charCodeAt(e);
+      b[e] = 33 <= f && 126 >= f ? String.fromCharCode(33 + (f + 14) % 94) : String.fromCharCode(f);
+    }
+    return da(b.join(""));
+  };
+  var ca = (a) => {
+    return decodeURIComponent(a);
+  };
+  var da = (a) => {
+    a = a.replace(".cda.mp4", "");
+    a = a.replace(".2cda.pl", ".cda.pl");
+    a = a.replace(".3cda.pl", ".cda.pl");
+    return -1 < a.indexOf("/upstream") ? (a = a.replace("/upstream", ".mp4/upstream"), "https://" + a) : "https://" + a + ".mp4";
+  };
+
   // src/cda/class.js
   var import_lz_string = __toModule(require_lz_string());
   var get_video_info = class {
@@ -514,6 +560,7 @@
     qualities = null;
     element(element) {
       const data = JSON.parse(element.getAttribute("player_data"));
+      console.log(data);
       this.title = decodeURI(data["video"]["title"]).replaceAll(/%2C/gi, ",");
       this.id = data["video"]["id"];
       this.duration = data["video"]["durationFull"];
@@ -522,20 +569,19 @@
       this.thumb = data["video"]["thumb"];
       this.type = data["video"]["type"];
       this.qualities = Object.entries(data["video"]["qualities"]).map((x) => {
-        const data_string = JSON.stringify({
-          "id": this.id,
-          "quality": x[1],
-          "ts": data["video"]["ts"],
-          "key": this.hash2,
-          "partner": this.partner === "partner" ? 1 : 0
-        });
-        const base = (0, import_lz_string.compressToEncodedURIComponent)(data_string);
         return {
           "quality": x[1],
           "resolution": x[0],
-          "url": `${API_URL}/video/${base}`
+          "url": `${API_URL}/video/${this.type === "partner" ? 1 : 0}/${this.id}/${x[0]}`
         };
       });
+    }
+  };
+  var get_video_url = class {
+    url = null;
+    element(element) {
+      const data = JSON.parse(element.getAttribute("player_data"));
+      this.url = decode(data["video"]["file"]);
     }
   };
   var check_premiun = class {
@@ -572,25 +618,16 @@
     info["url"] = new_url;
     return { info };
   };
-  var get_url = async (data) => {
-    const cda_url = "https://www.cda.pl/";
-    const body = JSON.stringify({
-      "jsonrpc": "2.0",
-      "method": "videoGetLink",
-      "params": [
-        data["id"],
-        data["quality"],
-        data["ts"],
-        data["key"],
-        {}
-      ],
-      "id": 2
-    });
-    const f = await fetch(`${cda_url}`, options(cda_url + `?quality=${data["quality"]}&id=${data["id"]}`, "POST", body));
+  var get_url = async (url, res, cda_id) => {
+    const s = res ? `?wersja=${res}` : "";
+    const f = await fetch(`${url}${s}`, options(`${url}${s}`));
+    console.log(f.status);
     if (f.status !== 200) {
       return null;
     }
-    return (await f.json()).result.resp;
+    const video_url = new get_video_url();
+    await new HTMLRewriter().on(`#mediaplayer${cda_id}`, video_url).transform(f).text();
+    return video_url["url"];
   };
   var get_data = async (cda_id) => {
     if (!cda_id) {
@@ -764,7 +801,7 @@
     }
     return res;
   });
-  API.get("/video/:data", show_request, async (req, event) => {
+  API.get("/video/:p/:id/:res", show_request, async (req, event) => {
     let cache = caches.default;
     const url = new URL(req.url);
     const url_to_check = url.origin + url.pathname;
@@ -773,15 +810,12 @@
       console.log("FROM CACHE");
       return inCache;
     }
-    let data = null;
-    try {
-      data = JSON.parse((0, import_lz_string2.decompressFromEncodedURIComponent)(req.params.data));
-    } catch (e) {
-      console.log(e);
-      return new Response("", { status: 500 });
-    }
-    console.log(data);
-    const video_url = await get_url(data);
+    const partner = req.params.p === "1" ? true : false;
+    const cda_id = req.params.id;
+    const resolution = req.params.res;
+    console.log(req.params);
+    const cda_url = `https://ebd.cda.pl/620x395/${cda_id}${partner ? "/vfilm" : ""}`;
+    const video_url = await get_url(cda_url, resolution, cda_id);
     if (video_url === null) {
       return new Response("", { status: 500 });
     }
@@ -793,7 +827,6 @@
     console.log("PUT TO CACHE");
     const new_req = new Request(url_to_check, req);
     event.waitUntil(cache.put(new_req, res.clone()));
-    event.waitUntil(update_stats_global("cda-gen-json"));
     return res;
   });
   API.get("/stats", show_request, async (req, res) => {
