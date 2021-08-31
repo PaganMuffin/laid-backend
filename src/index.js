@@ -2,6 +2,7 @@ import { Router } from 'itty-router'
 import { decompress, decompressFromBase64, decompressFromEncodedURIComponent } from 'lz-string';
 import { check_status, get_data, get_url } from './cda';
 import { build_player, get_stats_global, update_stats_global } from './functions';
+import { get_playlist } from './functions/supabase';
 
 const API = Router();
 
@@ -157,6 +158,38 @@ API.get('/video/:p/:id/:res',show_request, async (req, event) => {
     return res
 })
 
+
+
+//Dashboard
+
+
+API.get('/playlist/:id', show_request, async (req, event) => {
+
+    let cache = caches.default;
+    const url = new URL(req.url)
+    const url_to_check =  url.origin + url.pathname
+    const inCache = await cache.match(url_to_check)
+    if (inCache) {
+        console.log("FROM CACHE")
+        //if(inCache.status === 200) event.waitUntil(update_stats_global('cda-gen-json'))
+        return inCache
+    }
+    const header = new Headers()
+    header.set('Access-Control-Allow-Origin','*')
+    header.set('content-type','application/json')
+
+    const id = req.params.id
+    if(!id) return new Response('',{status:400})
+
+    const data = await get_playlist(id)
+
+    return new Response(JSON.stringify(data), {status: data.code, headers:header})
+    
+})
+
+
+
+//Utils
 
 API.get('/stats', show_request, async (req, res) => {
     return new Response(JSON.stringify(await get_stats_global()), {status:200})
