@@ -9,9 +9,21 @@ const cda_quality = {
 }
 
 
+export class get_nick{
+    nick = ''
+
+    text(text){
+        this.nick += text.text
+    }
+}
+
+
+
+
 export class get_video_info {
     title = null;
     id = null;
+    user = null;
     duration = null;
     thumb = null;
     type = null;
@@ -29,6 +41,7 @@ export class get_video_info {
         this.hash = data['video']['hash']
         this.hash2 = data['video']['hash2']
         this.thumb = data['video']['thumb']
+        this.user = data['video']['user']
         this.type = data['video']['type']
         this.qualities = Object.entries(data['video']['qualities']).map((x) => {
             return {

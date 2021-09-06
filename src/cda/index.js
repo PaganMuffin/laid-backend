@@ -1,4 +1,4 @@
-import { check_premiun, get_video_info, get_video_qualities, get_video_url } from "./class"
+import { check_premiun, get_nick, get_video_info, get_video_qualities, get_video_url } from "./class"
 
 
 // prem 7933922d0
@@ -22,20 +22,24 @@ const options = (key, method = 'GET', body = null) => {
 }
 
 export const check_resolutions = async (cda_id) => {
-    const url = `https://ebd.cda.pl/620x395/${cda_id}`
+    const url = `https://www.cda.pl/video/${cda_id}`
     const f = await fetch(url, options(url))
     const new_url = f.url
         
     const info = new get_video_info()
 
     const is_premium = new check_premiun()
+    const nick = new get_nick()
+
     await new HTMLRewriter()
         .on(`#mediaplayer${cda_id}`, info)
         .on(`.xs-txt`, is_premium)
+        .on(`#leftCol > div:nth-child(2) > div.DescrVID > div.DescrVID-left > div > div > div > div:nth-child(1) > a > span > span`, nick)
         .transform(f)
         .text()
         
     info['code'] = f.status
+    info['author'] = nick['nick']
     info['premium'] = is_premium['premium']
     info['url'] = new_url
 
@@ -106,6 +110,10 @@ export const get_data = async (cda_id)  => {
         return {'code':info['code'], 'msg':"Not Found", 'data':null}
     }
 
+    if(info['code'] === 410){
+        return {'code':info['code'], 'msg':"Copyright", 'data':null}
+    }
+
     if (info['code'] !== 200){
         return {'code':info['code'], 'msg':"Blabla", 'data':null}
     }
@@ -118,7 +126,7 @@ export const get_data = async (cda_id)  => {
     //delete info['quality_data']
     delete info['url']
     delete info['premium']
-    delete info['id']
+    //delete info['id']
     delete info['type']
     delete info['code']
     delete info['hash']

@@ -664,7 +664,6 @@
 
   // src/index.js
   var import_itty_router = __toModule(require_itty_router_min());
-  var import_lz_string2 = __toModule(require_lz_string());
 
   // src/cda/decode.js
   var decode = (a) => {
@@ -714,9 +713,16 @@
 
   // src/cda/class.js
   var import_lz_string = __toModule(require_lz_string());
+  var get_nick = class {
+    nick = "";
+    text(text) {
+      this.nick += text.text;
+    }
+  };
   var get_video_info = class {
     title = null;
     id = null;
+    user = null;
     duration = null;
     thumb = null;
     type = null;
@@ -732,6 +738,7 @@
       this.hash = data["video"]["hash"];
       this.hash2 = data["video"]["hash2"];
       this.thumb = data["video"]["thumb"];
+      this.user = data["video"]["user"];
       this.type = data["video"]["type"];
       this.qualities = Object.entries(data["video"]["qualities"]).map((x) => {
         return {
@@ -772,13 +779,15 @@
     };
   };
   var check_resolutions = async (cda_id) => {
-    const url = `https://ebd.cda.pl/620x395/${cda_id}`;
+    const url = `https://www.cda.pl/video/${cda_id}`;
     const f = await fetch(url, options(url));
     const new_url = f.url;
     const info = new get_video_info();
     const is_premium = new check_premiun();
-    await new HTMLRewriter().on(`#mediaplayer${cda_id}`, info).on(`.xs-txt`, is_premium).transform(f).text();
+    const nick = new get_nick();
+    await new HTMLRewriter().on(`#mediaplayer${cda_id}`, info).on(`.xs-txt`, is_premium).on(`#leftCol > div:nth-child(2) > div.DescrVID > div.DescrVID-left > div > div > div > div:nth-child(1) > a > span > span`, nick).transform(f).text();
     info["code"] = f.status;
+    info["author"] = nick["nick"];
     info["premium"] = is_premium["premium"];
     info["url"] = new_url;
     return { info };
@@ -803,6 +812,9 @@
     if (info["code"] === 404) {
       return { "code": info["code"], "msg": "Not Found", "data": null };
     }
+    if (info["code"] === 410) {
+      return { "code": info["code"], "msg": "Copyright", "data": null };
+    }
     if (info["code"] !== 200) {
       return { "code": info["code"], "msg": "Blabla", "data": null };
     }
@@ -811,7 +823,6 @@
     }
     delete info["url"];
     delete info["premium"];
-    delete info["id"];
     delete info["type"];
     delete info["code"];
     delete info["hash"];
@@ -3719,7 +3730,7 @@
     const { data, error } = await supabase.from("playlist").select(`
             id,name,
             items:playlist_video (
-                id,title,thumb,cda_id,order
+                id,title,thumb,cda_id,p_order
             )
         `).eq("id", id);
     if (error)
@@ -3843,6 +3854,33 @@
       return new Response("", { status: 400 });
     const data = await get_playlist(id);
     return new Response(JSON.stringify(data), { status: data.code, headers: header });
+  });
+  API.get(`/info/:id`, show_request, async (req, event) => {
+    console.log("START");
+    const cda_id = req.params.id;
+    const header = new Headers();
+    header.set("Access-Control-Allow-Origin", "*");
+    let cache = caches.default;
+    const url = new URL(req.url);
+    const url_to_check = url.origin + url.pathname;
+    const inCache = await cache.match(url_to_check);
+    if (inCache) {
+      console.log("FROM CACHE");
+      if (inCache.status === 200)
+        event.waitUntil(update_stats_global("cda-gen-json"));
+      return inCache;
+    }
+    const data = await get_data(cda_id);
+    let res = new Response("", { status: data["code"], headers: header });
+    if (data["code"] === 200) {
+      delete data["data"]["qualities"];
+      header.set("Cache-Control", "public, max-age=60");
+      res = new Response(JSON.stringify(data), { headers: header, status: data["code"] });
+      console.log("PUT TO CACHE");
+      const new_req = new Request(url_to_check, req);
+      event.waitUntil(cache.put(new_req, res.clone()));
+    }
+    return res;
   });
   API.get("/stats", show_request, async (req, res) => {
     return new Response(JSON.stringify(await get_stats_global()), { status: 200 });

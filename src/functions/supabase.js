@@ -10,7 +10,7 @@ export const get_playlist = async (id) => {
         .select(`
             id,name,
             items:playlist_video (
-                id,title,thumb,cda_id,order
+                id,title,thumb,cda_id,p_order
             )
         `)
         .eq('id', id)

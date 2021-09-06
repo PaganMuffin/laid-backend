@@ -6,7 +6,7 @@
     "main": "./dist/index.js",
     "scripts": {
         "build": "node ./build/index.js",
-        "dev": "miniflare --watch --debug " 
+        "dev": "miniflare --watch --debug" 
     },
     "keywords": [],
     "author": "",
