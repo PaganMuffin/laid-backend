@@ -859,16 +859,22 @@
         <script src="https://cdn.plyr.io/3.6.8/plyr.js"><\/script>
         <link rel="stylesheet" href="https://cdn.plyr.io/3.6.8/plyr.css" />
         <script>
-            const player = new Plyr('#player');
+            const player = new Plyr('#player', {
+                title: '${data["data"]["title"]}',
+                poster: '${data["data"]["thumb"]}',
+                speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2,3,4] }
+            });
             player.source = {
                 autoplay: true,
                 type: 'video',
-                title: '${data["data"]["title"]}',
+               
                 sources: ${JSON.stringify(data["data"]["qualities"].map((x) => {
       return { "src": x["url"], "type": "video/mp4", "size": x["resolution"].replace("p", "") };
     }))},
-                poster: '${data["data"]["thumb"]}',
+                
+
             };
+
             player.on('qualitychange', (e) => {
                 player.play()
             })
@@ -3729,7 +3735,7 @@
   var supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
   var get_playlist = async (id) => {
     supabase.auth.setAuth(workers_anon);
-    const { data, error } = await supabase.from("playlist").select(`
+    let { data, error } = await supabase.from("playlist").select(`
             id,name,
             items:playlist_video (
                 id,title,thumb,cda_id,p_order, author
@@ -3739,6 +3745,7 @@
       return { "code": 500, "msg": "Internal Error", "data": null };
     if (data.length !== 1)
       return { "code": 404, "msg": "Not Found", "data": null };
+    data[0].items = data[0].items.sort((a, b) => a.p_order - b.p_order);
     return { "code": 200, "msg": "ok", "data": data[0] };
   };
 

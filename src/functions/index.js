@@ -26,14 +26,20 @@ export const build_player = (data, url) => {
         <script src="https://cdn.plyr.io/3.6.8/plyr.js"></script>
         <link rel="stylesheet" href="https://cdn.plyr.io/3.6.8/plyr.css" />
         <script>
-            const player = new Plyr('#player');
+            const player = new Plyr('#player', {
+                title: '${data['data']['title']}',
+                poster: '${data['data']['thumb']}',
+                speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2,3,4] }
+            });
             player.source = {
                 autoplay: true,
                 type: 'video',
-                title: '${data['data']['title']}',
+               
                 sources: ${JSON.stringify(data['data']['qualities'].map((x) => {return {'src':x['url'],'type':'video/mp4','size':x['resolution'].replace('p','')}}))},
-                poster: '${data['data']['thumb']}',
+                
+
             };
+
             player.on('qualitychange', (e) => {
                 player.play()
             })

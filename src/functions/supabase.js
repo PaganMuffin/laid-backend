@@ -7,7 +7,7 @@ const supabase = createClient(SUPABASE_URL,SUPABASE_ANON)
 export const get_playlist = async (id) => {
     supabase.auth.setAuth(workers_anon)
 
-    const {data, error} = await supabase
+    let {data, error} = await supabase
         .from('playlist')
         .select(`
             id,name,
@@ -16,8 +16,10 @@ export const get_playlist = async (id) => {
             )
         `)
         .eq('id', id)
+    
 
     if(error) return {'code':500, 'msg':"Internal Error", 'data':null}
     if(data.length !== 1) return {'code':404, 'msg':"Not Found", 'data':null}
+    data[0].items = data[0].items.sort((a,b) => a.p_order - b.p_order)
     return {'code':200, 'msg':"ok", 'data': data[0]}
 }
