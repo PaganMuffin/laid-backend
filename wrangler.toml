@@ -5,9 +5,6 @@ workers_dev = true
 route = ""
 zone_id = ""
 
-[build]
-command = "npm run build"
-
 [vars]
 API_URL = "https://laid-backend.pamu.me"
 SUPABASE_URL = "https://ygggayldbzezqqsunqdd.supabase.co"
