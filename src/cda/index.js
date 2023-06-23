@@ -118,7 +118,7 @@ export const get_data = async (cda_id) => {
     delete info['code']
     delete info['hash']
     delete info['hash2']
-
+    delete info['is_adult']
     return { code: 200, msg: 'ok', data: info }
 }
 

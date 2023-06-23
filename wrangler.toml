@@ -1,10 +1,10 @@
-name = "backend"
+name = "laid-backend"
 type = "javascript"
-account_id = "c5bc78d0b867fc8bac8435761e50d993"
+account_id = "6906e67d22573c5280a50c5cf9ab0605"
 workers_dev = true
 route = ""
 zone_id = ""
-
+compatibility_date = "2023-06-23"
 [vars]
 API_URL = "https://laid-backend.pamu.me"
 SUPABASE_URL = "https://ygggayldbzezqqsunqdd.supabase.co"
