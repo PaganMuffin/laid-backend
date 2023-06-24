@@ -10,10 +10,10 @@ API_URL = "https://laid-backend.pamu.me"
 SUPABASE_URL = "https://ygggayldbzezqqsunqdd.supabase.co"
 SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYyODQyMzg3NCwiZXhwIjoxOTQzOTk5ODc0fQ.8dFMJxk51smLydcuXwtmrwYztTHuRDqe6VKpzH-yY3g"
 
-[build.upload]
-format = "service-worker"
-
 
 [miniflare]
 host = "127.0.0.1"                 ## --host
 port = 8787                        ## --port
+
+[[analytics_engine_datasets]]
+binding = "LAID_STATS"

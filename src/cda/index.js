@@ -1,3 +1,4 @@
+import API from '..'
 import {
     check_premiun,
     get_nick,
@@ -28,10 +29,10 @@ const options = (key, method = 'GET', body = null) => {
     }
 }
 
-export const check_resolutions = async (cda_id) => {
-    let info = await parse(cda_id, false)
+export const check_resolutions = async (cda_id, API_URL) => {
+    let info = await parse(cda_id, false, API_URL)
     if (info['is_adult']) {
-        info = await parse(cda_id, true)
+        info = await parse(cda_id, true, API_URL)
     }
 
     return info
@@ -88,12 +89,12 @@ export const get_url = async (url, res, cda_id) => {
     return video_url['url']
 }
 
-export const get_data = async (cda_id) => {
+export const get_data = async (cda_id, API_URL) => {
     if (!cda_id) {
         return { code: 400, msg: 'Bad Request', data: null }
     }
 
-    let info = await check_resolutions(cda_id)
+    let info = await check_resolutions(cda_id, API_URL)
 
     if (info['code'] === 404) {
         return { code: info['code'], msg: 'Not Found', data: null }
@@ -122,7 +123,7 @@ export const get_data = async (cda_id) => {
     return { code: 200, msg: 'ok', data: info }
 }
 
-const parse = async (cda_id, adult) => {
+const parse = async (cda_id, adult, API_URL) => {
     const url = `https://www.cda.pl/video/${cda_id}`
     let f = null
 
@@ -136,7 +137,7 @@ const parse = async (cda_id, adult) => {
 
     const new_url = f.url
 
-    let info = new get_video_info()
+    let info = new get_video_info(API_URL)
 
     const is_premium = new check_premiun()
     const nick = new get_nick()

@@ -27,6 +27,10 @@ export class get_video_info {
     hash2 = null
     qualities = null
 
+    constructor(API_URL) {
+        this.API_URL = API_URL
+    }
+
     element(element) {
         const data = JSON.parse(element.getAttribute('player_data'))
         console.log(data)
@@ -42,9 +46,9 @@ export class get_video_info {
             return {
                 quality: x[1],
                 resolution: x[0],
-                url: `${API_URL}/video/${this.type === 'partner' ? 1 : 0}/${
-                    this.id
-                }/${x[0]}`,
+                url: `${this.API_URL}/video/${
+                    this.type === 'partner' ? 1 : 0
+                }/${this.id}/${x[0]}`,
             }
         })
     }

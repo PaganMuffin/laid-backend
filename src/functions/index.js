@@ -35,7 +35,15 @@ export const build_player = (data, url) => {
                 autoplay: true,
                 type: 'video',
                
-                sources: ${JSON.stringify(data['data']['qualities'].map((x) => {return {'src':x['url'],'type':'video/mp4','size':x['resolution'].replace('p','')}}))},
+                sources: ${JSON.stringify(
+                    data['data']['qualities'].map((x) => {
+                        return {
+                            src: x['url'],
+                            type: 'video/mp4',
+                            size: x['resolution'].replace('p', ''),
+                        }
+                    }),
+                )},
                 
 
             };
@@ -56,11 +64,26 @@ export const build_player = (data, url) => {
 `
 }
 
-const namespace = "NS_64dadcc7-59a6-4b78-9d0c-7eea040cdec3"
+const namespace = 'NS_64dadcc7-59a6-4b78-9d0c-7eea040cdec3'
 
 export const update_stats_global = async (key) => {
     const url = `https://api.countapi.xyz/hit/${namespace}/${key}`
     await fetch(url)
+}
+
+export const send_stats = async (
+    ctx,
+    id,
+    status,
+    type,
+    endpoint,
+    cache,
+    quality = '_',
+) => {
+    ctx.env.LAID_STATS?.writeDataPoint({
+        blobs: [id, status, type, quality, cache, endpoint],
+        'indexes:': ['CDA'],
+    })
 }
 
 export const get_stats_global = async () => {
@@ -72,13 +95,19 @@ export const get_stats_global = async () => {
         'db-entries',
     ]
     //console.log(endpoints.map(x => `https://api.countapi.xyz/get/${namespace}/${x}`))
-    const p_arr = await Promise.all(endpoints.map(x => fetch(`https://api.countapi.xyz/get/${namespace}/${x}`)))
-    const r_arr = await Promise.all(p_arr.map(async (x) => {
-        const name = x.url.split('/').pop()
-        return {
-            'name':name,
-            'value':(await x.json())['value'],
-        }
-    }))
+    const p_arr = await Promise.all(
+        endpoints.map((x) =>
+            fetch(`https://api.countapi.xyz/get/${namespace}/${x}`),
+        ),
+    )
+    const r_arr = await Promise.all(
+        p_arr.map(async (x) => {
+            const name = x.url.split('/').pop()
+            return {
+                name: name,
+                value: (await x.json())['value'],
+            }
+        }),
+    )
     return r_arr
 }

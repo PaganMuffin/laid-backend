@@ -1,44 +1,29 @@
-import { Router } from 'itty-router'
+import { Hono } from 'hono'
 import { check_status, get_data, get_url } from './cda'
 import {
     build_player,
     get_stats_global,
+    send_stats,
     update_stats_global,
 } from './functions'
 import { get_playlist } from './functions/supabase'
 
-const API = Router()
+const API = new Hono()
 
-const origins = [
-    'localhost:3000',
-    'localhost:8787',
-    'backend.pamu.ga',
-    'pamu.ga',
-]
-
-const CORS_Test = (req, event) => {
-    try {
-        const org = new URL(req.headers.get('origin')).host
-        console.log(org)
-    } catch (e) {
-        console.log(e['code'])
+API.use('*', async (c, next) => {
+    await next()
+    const log = {
+        pathname: new URL(c.req.url).pathname,
+        method: c.req.method,
+        status: c.res.status,
+        timestamp: new Date().getTime(),
     }
-    //return new Response("TEST", {status:400})
-}
+})
 
-const show_request = (req) => {
-    console.log(
-        req.headers.get('cf-connecting-ip'),
-        req.cf.colo,
-        req.cf.country,
-        req.cf.region,
-        req.headers.get('user-agent'),
-    )
-}
-
-API.get(`/player/:id`, show_request, async (req, event) => {
+API.get(`/player/:id`, async (c) => {
     console.log('START')
-    const cda_id = req.params.id
+    const req = c.req
+    const cda_id = req.param('id')
     const header = new Headers()
     header.set('Access-Control-Allow-Origin', '*')
 
@@ -49,20 +34,28 @@ API.get(`/player/:id`, show_request, async (req, event) => {
     const inCache = await cache.match(url_to_check)
     if (inCache) {
         console.log('FROM CACHE')
-        if (inCache.status === 200)
-            event.waitUntil(update_stats_global('cda-gen-player'))
+
+        c.executionCtx.waitUntil(
+            send_stats(
+                c,
+                cda_id,
+                inCache.status,
+                'player',
+                new URL(req.url).pathname,
+                true,
+            ),
+        )
         return inCache
     }
 
     //GET DATA FROM CDA
-    const data = await get_data(cda_id)
+    const data = await get_data(cda_id, c.env.API_URL)
     let html = null
     if (data['code'] === 200) {
         header.set('content-type', 'text/html; charset=UTF-8')
         header.set('Cache-Control', 'public, max-age=60')
 
         html = build_player(data, req['url'])
-        event.waitUntil(update_stats_global('cda-gen-player'))
     } else {
         header.set('content-type', 'application/json')
     }
@@ -77,15 +70,27 @@ API.get(`/player/:id`, show_request, async (req, event) => {
     if (data['code'] === 200) {
         console.log('PUT TO CACHE')
         const new_req = new Request(url_to_check, req)
-        event.waitUntil(cache.put(new_req, res.clone()))
+        c.executionCtx.waitUntil(cache.put(new_req, res.clone()))
     }
+
+    c.executionCtx.waitUntil(
+        send_stats(
+            c,
+            cda_id,
+            res.status,
+            'player',
+            new URL(req.url).pathname,
+            false,
+        ),
+    )
 
     return res
 })
 
-API.get('/json/:id', show_request, async (req, event) => {
+API.get('/json/:id', async (c) => {
     console.log('START')
-    const cda_id = req.params.id
+    const req = c.req
+    const cda_id = req.param('id')
     const header = new Headers()
     header.set('Access-Control-Allow-Origin', '*')
 
@@ -96,13 +101,21 @@ API.get('/json/:id', show_request, async (req, event) => {
     const inCache = await cache.match(url_to_check)
     if (inCache) {
         console.log('FROM CACHE')
-        if (inCache.status === 200)
-            event.waitUntil(update_stats_global('cda-gen-json'))
+        c.executionCtx.waitUntil(
+            send_stats(
+                c,
+                cda_id,
+                inCache.status,
+                'json',
+                new URL(req.url).pathname,
+                true,
+            ),
+        )
         return inCache
     }
 
     //GET DATA FROM CDA
-    const data = await get_data(cda_id)
+    const data = await get_data(cda_id, c.env.API_URL)
 
     let res = new Response('', { status: data['code'], headers: header })
 
@@ -119,30 +132,51 @@ API.get('/json/:id', show_request, async (req, event) => {
 
         console.log('PUT TO CACHE')
         const new_req = new Request(url_to_check, req)
-        event.waitUntil(cache.put(new_req, res.clone()))
 
-        event.waitUntil(update_stats_global('cda-gen-json'))
+        c.executionCtx.waitUntil(cache.put(new_req, res.clone()))
     }
+
+    c.executionCtx.waitUntil(
+        send_stats(
+            c,
+            cda_id,
+            res.status,
+            'player',
+            new URL(req.url).pathname,
+            false,
+        ),
+    )
 
     return res
 })
 
-API.get('/video/:p/:id/:res', show_request, async (req, event) => {
+API.get('/video/:p/:id/:res', async (c) => {
+    const req = c.req
     let cache = caches.default
     const url = new URL(req.url)
     const url_to_check = url.origin + url.pathname
     const inCache = await cache.match(url_to_check)
-
+    const partner = req.param('p') === '1' ? true : false
+    const cda_id = req.param('id')
+    const resolution = req.param('res')
     if (inCache) {
         console.log('FROM CACHE')
-        //if(inCache.status === 200) event.waitUntil(update_stats_global('cda-gen-json'))
+
+        c.executionCtx.waitUntil(
+            send_stats(
+                c,
+                cda_id,
+                inCache.status,
+                'video',
+                new URL(req.url).pathname,
+                true,
+                resolution,
+            ),
+        )
+
         return inCache
     }
 
-    const partner = req.params.p === '1' ? true : false
-    const cda_id = req.params.id
-    const resolution = req.params.res
-    console.log(req.params)
     const cda_url = `https://ebd.cda.pl/620x395/${cda_id}${
         partner ? '/vfilm' : ''
     }`
@@ -162,41 +196,56 @@ API.get('/video/:p/:id/:res', show_request, async (req, event) => {
     //PUT IN CACHE IF 200
     console.log('PUT TO CACHE')
     const new_req = new Request(url_to_check, req)
-    event.waitUntil(cache.put(new_req, res.clone()))
-
+    c.executionCtx.waitUntil(cache.put(new_req, res.clone()))
+    c.executionCtx.waitUntil(
+        send_stats(
+            c,
+            cda_id,
+            res.status,
+            'video',
+            new URL(req.url).pathname,
+            false,
+            resolution,
+        ),
+    )
     return res
 })
 
 //Dashboard
 
-API.get('/playlist/:id', show_request, async (req, event) => {
+API.get('/playlist/:id', async (c) => {
+    const req = c.req
+
     let cache = caches.default
     const url = new URL(req.url)
     const url_to_check = url.origin + url.pathname
     const inCache = await cache.match(url_to_check)
     if (inCache) {
         console.log('FROM CACHE')
-        //if(inCache.status === 200) event.waitUntil(update_stats_global('cda-gen-json'))
+        //if(inCache.status === 200) c.executionCtx.waitUntil(update_stats_global('cda-gen-json'))
         return inCache
     }
     const header = new Headers()
     header.set('Access-Control-Allow-Origin', '*')
     header.set('content-type', 'application/json')
 
-    const id = req.params.id
+    const id = req.param('id')
     if (!id) return new Response('', { status: 400 })
 
-    const data = await get_playlist(id)
+    const data = await get_playlist(id, c)
 
-    return new Response(JSON.stringify(data), {
+    const res = new Response(JSON.stringify(data), {
         status: data.code,
         headers: header,
     })
+
+    return res
 })
 
-API.get(`/info/:id`, show_request, async (req, event) => {
+API.get(`/info/:id`, async (c) => {
     console.log('START')
-    const cda_id = req.params.id
+    const req = c.req
+    const cda_id = req.param('id')
     const header = new Headers()
     header.set('Access-Control-Allow-Origin', '*')
 
@@ -207,13 +256,21 @@ API.get(`/info/:id`, show_request, async (req, event) => {
     const inCache = await cache.match(url_to_check)
     if (inCache) {
         console.log('FROM CACHE')
-        if (inCache.status === 200)
-            event.waitUntil(update_stats_global('cda-gen-json'))
+        c.executionCtx.waitUntil(
+            send_stats(
+                c,
+                cda_id,
+                inCache.status,
+                'info',
+                new URL(req.url).pathname,
+                true,
+            ),
+        )
         return inCache
     }
 
     //GET DATA FROM CDA
-    const data = await get_data(cda_id)
+    const data = await get_data(cda_id, c.env.API_URL)
 
     let res = new Response('', { status: data['code'], headers: header })
 
@@ -231,31 +288,20 @@ API.get(`/info/:id`, show_request, async (req, event) => {
 
         console.log('PUT TO CACHE')
         const new_req = new Request(url_to_check, req)
-        event.waitUntil(cache.put(new_req, res.clone()))
+        c.executionCtx.waitUntil(cache.put(new_req, res.clone()))
     }
+    c.executionCtx.waitUntil(
+        send_stats(
+            c,
+            cda_id,
+            res.status,
+            'info',
+            new URL(req.url).pathname,
+            true,
+        ),
+    )
 
     return res
 })
 
-//Utils
-
-API.get('/stats', show_request, async (req, res) => {
-    return new Response(JSON.stringify(await get_stats_global()), {
-        status: 200,
-    })
-})
-
-API.all(
-    '*',
-    () =>
-        new Response('Not Found.', {
-            status: 404,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-            },
-        }),
-)
-
-addEventListener('fetch', (event) =>
-    event.respondWith(API.handle(event.request, event)),
-)
+export default API
